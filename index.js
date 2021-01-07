@@ -1,55 +1,53 @@
 const inquirer = require("inquirer");
-const coloers = require("colors");
+const colors = require("colors");
 const axios = require("axios");
+const battleRound = require("./lib/battle");
+
+const { choosePokemon } = require("./lib/choices");
 
 const pokeapi = "https://pokeapi.co/api/v2/";
 
 console.log("\nWelcome To Pokemon Battler!\n".magenta);
 
-const getTypes = async () => {
-  const types = await axios
-    .get(pokeapi + "type")
-    .then(({ data: { results } }) => results);
-
-  return types;
+const player1 = {
+  pokeball: [],
 };
+const player2 = {
+  pokeball: [],
+};
+const types = {};
 
-getTypes()
-  .then((types) => {
+inquirer
+  .prompt({
+    name: "trainer1",
+    type: "input",
+    message: `Trainer 1: What's your name?`,
+  })
+  .then(({ trainer1 }) => {
+    player1.name = trainer1;
+    return;
+  })
+  .then(() => {
     return inquirer.prompt({
-      name: "typeChoice",
-      type: "list",
-      message: `Which Type of Pokemon?`,
-      choices: types,
+      name: "trainer2",
+      type: "input",
+      message: `Trainer 2: What's your name?`,
     });
   })
-  .then(({ typeChoice }) => {
-    console.log(typeChoice);
-    return axios.get(pokeapi + "type/" + typeChoice);
+  .then(({ trainer2 }) => {
+    player2.name = trainer2;
+    return axios.get(pokeapi + "type");
   })
-  .then(({ data: { pokemon } }) => {
-    const pokemonList = pokemon.map((pokemon) => {
-      return { name: pokemon.pokemon.name, url: pokemon.pokemon.url };
-    });
-    const pokemonChoice = inquirer.prompt({
-      name: "pokemonChoice",
-      type: "list",
-      message: "Choose Your Pokemon!",
-      choices: pokemonList,
-    });
+  .then(({ data: { results } }) => {
+    types.list = results;
 
-    return Promise.all([pokemonChoice, pokemonList]);
+    console.log(`\n${player1.name}! - Time to choose your pokemon!`.yellow);
+    return choosePokemon(player1, types);
   })
-  .then((promiseArray) => {
-    const chosenObj = promiseArray[1].filter(
-      (pokemon) => promiseArray[0].pokemonChoice === pokemon.name
-    )[0];
-    return axios.get(chosenObj.url);
+  .then(() => {
+    console.log(`\n${player2.name}! - Time to choose your pokemon!`.yellow);
+    return choosePokemon(player2, types);
   })
-  .then(({ data }) => {
-    console.log(data);
-    return { name: data.name, moves: data.moves };
-  })
-  .then((pokemon1) => {
-    console.log(pokemon1, pokemon1.moves);
+  .then(() => {
+    battleRound(player1, player2);
   });
