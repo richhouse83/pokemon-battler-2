@@ -55,5 +55,6 @@ inquirer
     return choosePokemon(player2, types);
   })
   .then(() => {
+    console.log("\nLET'S BATTLE!!".bgMagenta);
     battleRound(player1, player2);
   });
